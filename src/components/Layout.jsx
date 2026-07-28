@@ -25,6 +25,7 @@ export default function Layout({ children }) {
           <nav className="flex gap-1">
             <NavLink to="/" end className={link}>{t('dashboard')}</NavLink>
             <NavLink to="/items" className={link}>{t('items')}</NavLink>
+            <NavLink to="/caps" className={link}>{t('caps')}</NavLink>
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <button onClick={toggle} className="btn-ghost !px-2.5 !py-1.5 text-xs" title="Toggle language">

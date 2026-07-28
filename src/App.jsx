@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { isConfigured } from './lib/supabase'
@@ -5,6 +6,9 @@ import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Items from './pages/Items'
+// CAP pages pull in the heavy xlsx library — load them only when visited.
+const Caps = lazy(() => import('./pages/Caps'))
+const CapDetail = lazy(() => import('./pages/CapDetail'))
 
 function Spinner() {
   return (
@@ -51,6 +55,8 @@ export default function App() {
       <Route path="/login" element={session ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/" element={<Protected><Dashboard /></Protected>} />
       <Route path="/items" element={<Protected><Items /></Protected>} />
+      <Route path="/caps" element={<Protected><Suspense fallback={<Spinner />}><Caps /></Suspense></Protected>} />
+      <Route path="/caps/:id" element={<Protected><Suspense fallback={<Spinner />}><CapDetail /></Suspense></Protected>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

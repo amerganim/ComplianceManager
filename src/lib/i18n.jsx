@@ -55,6 +55,30 @@ const STRINGS = {
   license:         { en: 'License', bn: 'লাইসেন্স' },
   certificate:    { en: 'Certificate', bn: 'সার্টিফিকেট' },
   recurring_task:  { en: 'Recurring task', bn: 'পুনরাবৃত্ত কাজ' },
+
+  // CAP tracker (Phase 6)
+  caps:            { en: 'CAP Tracker', bn: 'সিএপি ট্র্যাকার' },
+  cap_import:      { en: 'Import CAP Excel', bn: 'সিএপি এক্সেল ইমপোর্ট' },
+  cap_none:        { en: 'No CAPs yet. Import an auditor’s Excel to start tracking findings.', bn: 'এখনো কোনো সিএপি নেই। ট্র্যাকিং শুরু করতে অডিটরের এক্সেল ইমপোর্ট করুন।' },
+  cap_title:       { en: 'CAP title', bn: 'সিএপি শিরোনাম' },
+  cap_auditor:     { en: 'Auditor', bn: 'অডিটর' },
+  cap_audit_date:  { en: 'Audit date', bn: 'অডিটের তারিখ' },
+  cap_choose_file: { en: 'Choose Excel file (.xlsx)', bn: 'এক্সেল ফাইল বাছুন (.xlsx)' },
+  cap_detected:    { en: 'findings detected', bn: 'টি ফাইন্ডিং পাওয়া গেছে' },
+  cap_import_now:  { en: 'Import findings', bn: 'ফাইন্ডিং ইমপোর্ট করুন' },
+  cap_export:      { en: 'Export status report', bn: 'স্ট্যাটাস রিপোর্ট এক্সপোর্ট' },
+  cap_open:        { en: 'Open', bn: 'খোলা' },
+  cap_in_progress: { en: 'In progress', bn: 'চলমান' },
+  cap_closed:      { en: 'Closed', bn: 'বন্ধ' },
+  cap_finding:     { en: 'Finding', bn: 'ফাইন্ডিং' },
+  cap_severity:    { en: 'Severity', bn: 'তীব্রতা' },
+  cap_action:      { en: 'Corrective action', bn: 'সংশোধনমূলক পদক্ষেপ' },
+  cap_deadline:    { en: 'Deadline', bn: 'সময়সীমা' },
+  cap_status:      { en: 'Status', bn: 'স্ট্যাটাস' },
+  cap_evidence:    { en: 'Evidence (link or note)', bn: 'প্রমাণ (লিংক বা নোট)' },
+  cap_all:         { en: 'All', bn: 'সব' },
+  cap_no_rows:     { en: 'No findings could be read from that file. Check it has a header row with columns like Finding / Severity / Deadline.', bn: 'ফাইলটি থেকে কোনো ফাইন্ডিং পড়া যায়নি। Finding / Severity / Deadline কলামসহ হেডার সারি আছে কিনা দেখুন।' },
+  cap_confirm_del: { en: 'Delete this CAP and all its findings?', bn: 'এই সিএপি ও এর সব ফাইন্ডিং মুছবেন?' },
 }
 
 const LangContext = createContext(null)

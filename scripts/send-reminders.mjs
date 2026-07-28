@@ -117,7 +117,69 @@ async function main() {
     }
   }
 
+  // ------------------------------------------------------------------
+  // CAP findings pass (Phase 6) — nudge on approaching/passed deadlines.
+  // Same tightest-bucket-fires-once discipline, own log table.
+  // ------------------------------------------------------------------
+  sent += await remindCapFindings({ supabase, today, factoryName, ownersByFactory, profileEmail })
+
   console.log(`Reminder run complete. Alerts sent/logged: ${sent}.`)
+}
+
+const CAP_THRESHOLDS = [3, 7, 14]
+
+function capBucketFor(days) {
+  if (days === null) return null
+  if (days < 0) return 'overdue'
+  for (const th of CAP_THRESHOLDS) if (days <= th) return String(th)
+  return null
+}
+
+async function remindCapFindings({ supabase, today, factoryName, ownersByFactory, profileEmail }) {
+  const [{ data: findings }, { data: logs }] = await Promise.all([
+    // Only findings still needing work can be nudged.
+    supabase.from('cap_findings').select('*').neq('status', 'closed'),
+    supabase.from('cap_alert_log').select('finding_id, threshold'),
+  ])
+  const alerted = new Set((logs ?? []).map((l) => `${l.finding_id}|${l.threshold}`))
+
+  let sent = 0
+  for (const f of findings ?? []) {
+    const days = daysLeft(f.deadline, today)
+    const bucket = capBucketFor(days)
+    if (!bucket) continue
+    if (alerted.has(`${f.id}|${bucket}`)) continue
+
+    const recipients = new Set(ownersByFactory.get(f.factory_id) ?? [])
+    if (f.assigned_to && profileEmail.has(f.assigned_to)) recipients.add(profileEmail.get(f.assigned_to))
+    if (recipients.size === 0) continue
+
+    const fname = factoryName.get(f.factory_id) ?? 'your factory'
+    const when = bucket === 'overdue' ? `is OVERDUE by ${Math.abs(days)} day(s)` : `is due in ${days} day(s)`
+    const message = {
+      subject: `⚠️ CAP finding ${bucket === 'overdue' ? 'OVERDUE' : `due in ${days}d`} — ${fname}`,
+      text:
+        `Corrective action reminder for ${fname}\n\n` +
+        `Finding:  ${f.description || '(no description)'}\n` +
+        (f.corrective_action ? `Action:   ${f.corrective_action}\n` : '') +
+        (f.severity ? `Severity: ${f.severity}\n` : '') +
+        `Deadline: ${f.deadline} — ${when}\n\n` +
+        `Close it out and attach evidence to stay audit-ready.`,
+    }
+
+    for (const to of recipients) {
+      try {
+        await sendAlert(CHANNEL, to, message)
+        await supabase.from('cap_alert_log').insert({
+          finding_id: f.id, threshold: bucket, channel: CHANNEL, recipient: to,
+        })
+        sent += 1
+      } catch (err) {
+        console.error(`Failed CAP alert for ${f.id} -> ${to}: ${err.message}`)
+      }
+    }
+  }
+  return sent
 }
 
 main().catch((err) => {
