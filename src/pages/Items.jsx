@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { useItems } from '../lib/useItems'
+import { useCurrentDocs } from '../lib/useDocuments'
 import { useLang } from '../lib/i18n'
 import StatusBadge from '../components/StatusBadge'
 import ItemForm from '../components/ItemForm'
+import DocumentsModal from '../components/DocumentsModal'
 
 export default function Items() {
   const { items, loading, error, saveItem, deleteItem, markDone } = useItems()
+  const { byItem: docsByItem, refresh: refreshDocs } = useCurrentDocs()
   const { t } = useLang()
   const [editing, setEditing] = useState(null) // item | 'new' | null
+  const [docItem, setDocItem] = useState(null)
 
   const handleDelete = async (item) => {
     if (!window.confirm(t('confirm_delete'))) return
@@ -43,7 +47,12 @@ export default function Items() {
               {items.map((item) => (
                 <tr key={item.id} className="hover:bg-slate-50/60">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-slate-800">{item.name}</div>
+                    <div className="flex items-center gap-1.5 font-medium text-slate-800">
+                      {item.name}
+                      {docsByItem[item.id] && (
+                        <span className="text-valid" title={t('doc_current')}>📎</span>
+                      )}
+                    </div>
                     {item.issuing_authority && (
                       <div className="text-xs text-slate-400">{item.issuing_authority}</div>
                     )}
@@ -58,6 +67,9 @@ export default function Items() {
                           ✓ {t('mark_done')}
                         </button>
                       )}
+                      <button className="btn-ghost !py-1 !px-2 text-xs" onClick={() => setDocItem(item)}>
+                        📎 {t('doc')}
+                      </button>
                       <button className="btn-ghost !py-1 !px-2 text-xs" onClick={() => setEditing(item)}>
                         {t('edit')}
                       </button>
@@ -78,6 +90,14 @@ export default function Items() {
           item={editing === 'new' ? null : editing}
           onSave={saveItem}
           onClose={() => setEditing(null)}
+        />
+      )}
+
+      {docItem && (
+        <DocumentsModal
+          item={docItem}
+          onChanged={refreshDocs}
+          onClose={() => setDocItem(null)}
         />
       )}
     </div>

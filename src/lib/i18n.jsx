@@ -79,6 +79,27 @@ const STRINGS = {
   cap_all:         { en: 'All', bn: 'সব' },
   cap_no_rows:     { en: 'No findings could be read from that file. Check it has a header row with columns like Finding / Severity / Deadline.', bn: 'ফাইলটি থেকে কোনো ফাইন্ডিং পড়া যায়নি। Finding / Severity / Deadline কলামসহ হেডার সারি আছে কিনা দেখুন।' },
   cap_confirm_del: { en: 'Delete this CAP and all its findings?', bn: 'এই সিএপি ও এর সব ফাইন্ডিং মুছবেন?' },
+
+  // Documents + audit binder (Phase 7)
+  docs:            { en: 'Documents', bn: 'ডকুমেন্ট' },
+  doc:             { en: 'Doc', bn: 'ডক' },
+  doc_none:        { en: 'No document attached.', bn: 'কোনো ডকুমেন্ট সংযুক্ত নেই।' },
+  doc_upload:      { en: 'Upload new version', bn: 'নতুন সংস্করণ আপলোড' },
+  doc_current:     { en: 'Current', bn: 'বর্তমান' },
+  doc_make_current:{ en: 'Make current', bn: 'বর্তমান করুন' },
+  doc_view:        { en: 'View', bn: 'দেখুন' },
+  doc_version:     { en: 'Version', bn: 'সংস্করণ' },
+  doc_uploaded:    { en: 'Uploaded', bn: 'আপলোড হয়েছে' },
+  doc_confirm_del: { en: 'Delete this document version?', bn: 'এই ডকুমেন্ট সংস্করণ মুছবেন?' },
+  binder:          { en: 'Audit Binder', bn: 'অডিট বাইন্ডার' },
+  binder_sub:      { en: 'Every current license & certificate, ready to print and hand over.', bn: 'প্রতিটি বর্তমান লাইসেন্স ও সার্টিফিকেট, প্রিন্ট করে হস্তান্তরের জন্য প্রস্তুত।' },
+  binder_print:    { en: 'Print binder', bn: 'বাইন্ডার প্রিন্ট' },
+  binder_zip:      { en: 'Download all current docs (.zip)', bn: 'সব বর্তমান ডকুমেন্ট ডাউনলোড (.zip)' },
+  binder_have:     { en: 'documented', bn: 'ডকুমেন্ট আছে' },
+  binder_missing:  { en: 'Missing document', bn: 'ডকুমেন্ট নেই' },
+  binder_complete: { en: 'Complete — every item has a current document.', bn: 'সম্পূর্ণ — প্রতিটি আইটেমে বর্তমান ডকুমেন্ট আছে।' },
+  binder_index:    { en: 'Index of documents', bn: 'ডকুমেন্ট সূচি' },
+  prepared_on:     { en: 'Prepared', bn: 'প্রস্তুত' },
 }
 
 const LangContext = createContext(null)

@@ -20,6 +20,7 @@ Built for small-to-mid Bangladesh garment factories. Compliance manager uses it 
 | 4 | Reminder engine + email (90/60/30/7/expired) | `scripts/send-reminders.mjs`, `scripts/lib/alerts.mjs` |
 | 5 | Recurring-task "mark done" + reset | `src/lib/useItems.js` (`markDone`) |
 | 6 | CAP tracker: import auditor Excel → track findings → export status report | `src/lib/cap.js`, `src/pages/Caps.jsx`, `src/pages/CapDetail.jsx` |
+| 7 | Document repo (versioned, Storage-backed) + one-click print-ready audit binder | `src/lib/documents.js`, `src/pages/AuditBinder.jsx`, `supabase/05_documents.sql` |
 
 Two guiding rules are load-bearing in the code:
 - **Status is computed, never stored** — single source of truth in `src/lib/status.js`, reused by the list, dashboard, and reminder job.
@@ -32,6 +33,7 @@ Two guiding rules are load-bearing in the code:
    - `supabase/01_schema.sql`
    - `supabase/02_rls.sql`
    - `supabase/04_cap.sql` (CAP tracker tables + RLS)
+   - `supabase/05_documents.sql` (document repo + private Storage bucket + RLS)
 3. **Env:** copy `.env.example` to `.env` and fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (from Supabase → Project Settings → API).
 4. Install and run:
 

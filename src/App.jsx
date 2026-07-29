@@ -6,9 +6,10 @@ import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Items from './pages/Items'
-// CAP pages pull in the heavy xlsx library — load them only when visited.
+// CAP + binder pages pull in heavy libs (xlsx / fflate) — load on visit.
 const Caps = lazy(() => import('./pages/Caps'))
 const CapDetail = lazy(() => import('./pages/CapDetail'))
+const AuditBinder = lazy(() => import('./pages/AuditBinder'))
 
 function Spinner() {
   return (
@@ -57,6 +58,7 @@ export default function App() {
       <Route path="/items" element={<Protected><Items /></Protected>} />
       <Route path="/caps" element={<Protected><Suspense fallback={<Spinner />}><Caps /></Suspense></Protected>} />
       <Route path="/caps/:id" element={<Protected><Suspense fallback={<Spinner />}><CapDetail /></Suspense></Protected>} />
+      <Route path="/binder" element={<Protected><Suspense fallback={<Spinner />}><AuditBinder /></Suspense></Protected>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

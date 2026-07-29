@@ -27,3 +27,11 @@
   .label { @apply mb-1 block text-sm font-medium text-slate-600; }
   .card  { @apply rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/70; }
 }
+
+/* Print: strip the app chrome and show only the binder, black on white. */
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  .print-page { break-after: page; }
+  .binder-sheet { box-shadow: none !important; }
+}
