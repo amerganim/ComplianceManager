@@ -3,7 +3,7 @@
 // manager's English may be shaky — every label ships in both.
 // Usage: const { t, lang, toggle } = useLang()
 // =====================================================================
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 
 const STRINGS = {
   app_name:        { en: 'Compliance Manager', bn: 'কমপ্লায়েন্স ম্যানেজার' },
@@ -106,6 +106,8 @@ const LangContext = createContext(null)
 
 export function LangProvider({ children }) {
   const [lang, setLang] = useState(() => localStorage.getItem('lang') || 'en')
+  // Keep <html lang> in sync — screen readers + Bengali font shaping.
+  useEffect(() => { document.documentElement.lang = lang }, [lang])
   const toggle = useCallback(() => {
     setLang((prev) => {
       const next = prev === 'en' ? 'bn' : 'en'

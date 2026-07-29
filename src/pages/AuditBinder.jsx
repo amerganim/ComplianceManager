@@ -74,7 +74,7 @@ export default function AuditBinder() {
         <div className="border-b border-slate-200 pb-4">
           <div className="text-2xl font-bold text-slate-900">{factory}</div>
           <div className="mt-1 text-sm text-slate-500">{t('binder')} · {t('prepared_on')} {today}</div>
-          <div className="mt-3 flex gap-6 text-sm">
+          <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
             <span><b className="text-slate-800">{binder.total}</b> {t('items').toLowerCase()}</span>
             <span className="text-valid"><b>{binder.withDoc}</b> {t('binder_have')}</span>
             {binder.missing.length > 0 && (
@@ -89,7 +89,8 @@ export default function AuditBinder() {
         {/* Index of documents */}
         <div className="mt-4">
           <div className="mb-2 text-sm font-semibold text-slate-700">{t('binder_index')}</div>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[480px] text-sm">
             <thead className="text-left text-xs uppercase tracking-wide text-slate-400">
               <tr>
                 <th className="py-2 w-8">#</th>
@@ -123,6 +124,7 @@ export default function AuditBinder() {
               })}
             </tbody>
           </table>
+          </div>
           {binder.rows.length === 0 && (
             <p className="py-6 text-center text-sm text-slate-500">{t('no_items')}</p>
           )}

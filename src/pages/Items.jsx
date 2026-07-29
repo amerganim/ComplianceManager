@@ -32,8 +32,8 @@ export default function Items() {
       ) : items.length === 0 ? (
         <div className="card text-center text-sm text-slate-500">{t('no_items')}</div>
       ) : (
-        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/70">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/70">
+          <table className="w-full min-w-[560px] text-sm">
             <thead className="border-b border-slate-100 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
               <tr>
                 <th className="px-4 py-3">{t('name')}</th>
