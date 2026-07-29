@@ -1,18 +1,26 @@
 -- =====================================================================
 -- OPTIONAL demo seed — makes the dashboard "look alive" for a demo.
--- Run this AFTER you have signed up in the app (which creates your
--- factory + owner profile). Grab your factory_id:
+-- Run in the Supabase SQL editor (service role) AFTER a factory exists.
 --
---   select factory_id from profiles where email = 'you@example.com';
---
--- Paste it below, then run. Dates are relative to today so the
--- green/yellow/red spread stays realistic whenever you demo.
+-- It resolves the target factory BY NAME, so there's no id to copy.
+-- Change 'Factory B' below if you want to seed a different factory.
+-- Dates are relative to today so the green/yellow/red spread stays
+-- realistic whenever you demo.
 -- =====================================================================
 
 do $$
 declare
-  f uuid := 'PASTE-YOUR-FACTORY-ID-HERE'::uuid;
+  f uuid;
 begin
+  select id into f from factories
+    where name = 'Factory B'
+    order by created_at desc
+    limit 1;
+
+  if f is null then
+    raise exception 'No factory named "Factory B" found. Check the factories table for the exact name.';
+  end if;
+
   insert into compliance_items
     (factory_id, name, category, issuing_authority, issue_date, expiry_date, recurrence_days, notes)
   values
@@ -29,4 +37,6 @@ begin
     (f, 'Quarterly Fire Drill',       'recurring_task', null,                      now()::date - 80,  now()::date + 10,  90,   'All floors'),
     (f, 'Monthly Water Testing',      'recurring_task', null,                      now()::date - 25,  now()::date + 5,   30,   'ETP outflow'),
     (f, 'Annual Machine Maintenance', 'recurring_task', null,                      now()::date - 200, now()::date + 165, 365,  null);
+
+  raise notice 'Seeded 9 demo items into factory %', f;
 end $$;
