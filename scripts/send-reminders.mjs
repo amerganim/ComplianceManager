@@ -15,6 +15,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { daysLeft } from '../src/lib/status.js'
 import { sendAlert } from './lib/alerts.mjs'
+import { resolveTargets } from './lib/targets.mjs'
 
 const url = process.env.SUPABASE_URL
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -23,8 +24,6 @@ if (!url || !serviceKey) {
   process.exit(1)
 }
 const supabase = createClient(url, serviceKey, { auth: { persistSession: false } })
-
-const CHANNEL = 'email' // swap/extend via the pluggable alert layer
 
 // Ascending so the FIRST match is the tightest applicable threshold.
 const THRESHOLDS = [7, 30, 60, 90]
@@ -55,30 +54,73 @@ function buildMessage(factoryName, item, days, bucket) {
 async function main() {
   const today = new Date()
 
-  const [{ data: items, error: itemsErr }, { data: profiles }, { data: logs }] =
-    await Promise.all([
-      supabase.from('compliance_items').select('*'),
-      supabase.from('profiles').select('id, factory_id, role, email'),
-      supabase.from('alert_log').select('item_id, threshold'),
-    ])
+  const [
+    { data: items, error: itemsErr }, { data: profiles }, { data: logs },
+    { data: findings }, { data: capLogs },
+  ] = await Promise.all([
+    supabase.from('compliance_items').select('*'),
+    supabase.from('profiles').select('id, factory_id, role, email, phone'),
+    supabase.from('alert_log').select('item_id, threshold, recipient'),
+    supabase.from('cap_findings').select('*').neq('status', 'closed'),
+    supabase.from('cap_alert_log').select('finding_id, threshold, recipient'),
+  ])
   if (itemsErr) throw itemsErr
 
   const factoryName = new Map()
-  const { data: factories } = await supabase.from('factories').select('id, name')
-  for (const f of factories ?? []) factoryName.set(f.id, f.name)
+  const factoryChannel = new Map()  // factory_id -> 'email' | 'whatsapp' | 'both'
+  const { data: factories } = await supabase.from('factories').select('id, name, alert_channel')
+  for (const f of factories ?? []) {
+    factoryName.set(f.id, f.name)
+    factoryChannel.set(f.id, f.alert_channel || 'email')
+  }
 
-  // (item_id|threshold) already alerted -> skip.
-  const alerted = new Set((logs ?? []).map((l) => `${l.item_id}|${l.threshold}`))
+  // Recipient-level dedup so an item+threshold never re-alerts the same
+  // address, yet 'both' channels (email + whatsapp) each get their send.
+  // Shared across item + CAP passes (UUIDs don't collide between them).
+  const alerted = new Set([
+    ...(logs ?? []).map((l) => `${l.item_id}|${l.threshold}|${l.recipient}`),
+    ...(capLogs ?? []).map((l) => `${l.finding_id}|${l.threshold}|${l.recipient}`),
+  ])
 
-  // Fast lookups for recipients.
-  const ownersByFactory = new Map() // factory_id -> [email]
-  const profileEmail = new Map()    // profile_id -> email
+  // Contact lookups, split by channel type.
+  const ownerEmails = new Map()  // factory_id -> [email]
+  const ownerPhones = new Map()  // factory_id -> [phone]
+  const profileEmail = new Map() // profile_id -> email
+  const profilePhone = new Map() // profile_id -> phone
+  const push = (map, key, val) => { if (!val) return; if (!map.has(key)) map.set(key, []); map.get(key).push(val) }
   for (const p of profiles ?? []) {
     if (p.email) profileEmail.set(p.id, p.email)
-    if (p.role === 'owner' && p.email) {
-      if (!ownersByFactory.has(p.factory_id)) ownersByFactory.set(p.factory_id, [])
-      ownersByFactory.get(p.factory_id).push(p.email)
+    if (p.phone) profilePhone.set(p.id, p.phone)
+    if (p.role === 'owner') { push(ownerEmails, p.factory_id, p.email); push(ownerPhones, p.factory_id, p.phone) }
+  }
+
+  const contactsFor = (factoryId, assignedTo) => ({
+    ownerEmails: ownerEmails.get(factoryId) ?? [],
+    ownerPhones: ownerPhones.get(factoryId) ?? [],
+    assigneeEmail: assignedTo ? profileEmail.get(assignedTo) : null,
+    assigneePhone: assignedTo ? profilePhone.get(assignedTo) : null,
+  })
+
+  // Send a message to every resolved target, deduped + logged. Shared by
+  // both the item and CAP passes. `logRow(channel, recipient)` returns the
+  // row to insert into the relevant *_alert_log table.
+  const dispatch = async (idKey, bucket, factoryId, assignedTo, message, logTable, logRow) => {
+    const pref = factoryChannel.get(factoryId) || 'email'
+    const targets = resolveTargets(pref, contactsFor(factoryId, assignedTo))
+    let n = 0
+    for (const { channel, recipient } of targets) {
+      if (alerted.has(`${idKey}|${bucket}|${recipient}`)) continue
+      try {
+        await sendAlert(channel, recipient, message)
+        await supabase.from(logTable).insert(logRow(channel, recipient))
+        alerted.add(`${idKey}|${bucket}|${recipient}`)
+        n += 1
+      } catch (err) {
+        // One bad address/number must not sink the whole run.
+        console.error(`Failed ${channel} alert (${idKey}) -> ${recipient}: ${err.message}`)
+      }
     }
+    return n
   }
 
   let sent = 0
@@ -86,73 +128,23 @@ async function main() {
     const days = daysLeft(item.expiry_date, today)
     const bucket = bucketFor(days)
     if (!bucket) continue
-    if (alerted.has(`${item.id}|${bucket}`)) continue
-
-    // Recipients: factory owner(s) + assigned manager, deduped.
-    const recipients = new Set(ownersByFactory.get(item.factory_id) ?? [])
-    if (item.assigned_to && profileEmail.has(item.assigned_to)) {
-      recipients.add(profileEmail.get(item.assigned_to))
-    }
-    if (recipients.size === 0) {
-      console.warn(`No recipient for item ${item.id} (${item.name}); skipping.`)
-      continue
-    }
 
     const message = buildMessage(factoryName.get(item.factory_id) ?? 'your factory', item, days, bucket)
-
-    for (const to of recipients) {
-      try {
-        await sendAlert(CHANNEL, to, message)
-        await supabase.from('alert_log').insert({
-          item_id: item.id,
-          threshold: bucket,
-          channel: CHANNEL,
-          recipient: to,
-        })
-        sent += 1
-      } catch (err) {
-        // One bad address must not sink the whole run.
-        console.error(`Failed alert for ${item.name} -> ${to}: ${err.message}`)
-      }
-    }
+    sent += await dispatch(
+      item.id, bucket, item.factory_id, item.assigned_to, message,
+      'alert_log',
+      (channel, recipient) => ({ item_id: item.id, threshold: bucket, channel, recipient })
+    )
   }
 
   // ------------------------------------------------------------------
-  // CAP findings pass (Phase 6) — nudge on approaching/passed deadlines.
-  // Same tightest-bucket-fires-once discipline, own log table.
+  // CAP findings pass (Phase 6) — nudge on approaching/passed deadlines,
+  // through the same channel-aware dispatch. Own log table.
   // ------------------------------------------------------------------
-  sent += await remindCapFindings({ supabase, today, factoryName, ownersByFactory, profileEmail })
-
-  console.log(`Reminder run complete. Alerts sent/logged: ${sent}.`)
-}
-
-const CAP_THRESHOLDS = [3, 7, 14]
-
-function capBucketFor(days) {
-  if (days === null) return null
-  if (days < 0) return 'overdue'
-  for (const th of CAP_THRESHOLDS) if (days <= th) return String(th)
-  return null
-}
-
-async function remindCapFindings({ supabase, today, factoryName, ownersByFactory, profileEmail }) {
-  const [{ data: findings }, { data: logs }] = await Promise.all([
-    // Only findings still needing work can be nudged.
-    supabase.from('cap_findings').select('*').neq('status', 'closed'),
-    supabase.from('cap_alert_log').select('finding_id, threshold'),
-  ])
-  const alerted = new Set((logs ?? []).map((l) => `${l.finding_id}|${l.threshold}`))
-
-  let sent = 0
   for (const f of findings ?? []) {
     const days = daysLeft(f.deadline, today)
     const bucket = capBucketFor(days)
     if (!bucket) continue
-    if (alerted.has(`${f.id}|${bucket}`)) continue
-
-    const recipients = new Set(ownersByFactory.get(f.factory_id) ?? [])
-    if (f.assigned_to && profileEmail.has(f.assigned_to)) recipients.add(profileEmail.get(f.assigned_to))
-    if (recipients.size === 0) continue
 
     const fname = factoryName.get(f.factory_id) ?? 'your factory'
     const when = bucket === 'overdue' ? `is OVERDUE by ${Math.abs(days)} day(s)` : `is due in ${days} day(s)`
@@ -166,20 +158,23 @@ async function remindCapFindings({ supabase, today, factoryName, ownersByFactory
         `Deadline: ${f.deadline} — ${when}\n\n` +
         `Close it out and attach evidence to stay audit-ready.`,
     }
-
-    for (const to of recipients) {
-      try {
-        await sendAlert(CHANNEL, to, message)
-        await supabase.from('cap_alert_log').insert({
-          finding_id: f.id, threshold: bucket, channel: CHANNEL, recipient: to,
-        })
-        sent += 1
-      } catch (err) {
-        console.error(`Failed CAP alert for ${f.id} -> ${to}: ${err.message}`)
-      }
-    }
+    sent += await dispatch(
+      f.id, bucket, f.factory_id, f.assigned_to, message,
+      'cap_alert_log',
+      (channel, recipient) => ({ finding_id: f.id, threshold: bucket, channel, recipient })
+    )
   }
-  return sent
+
+  console.log(`Reminder run complete. Alerts sent/logged: ${sent}.`)
+}
+
+const CAP_THRESHOLDS = [3, 7, 14]
+
+function capBucketFor(days) {
+  if (days === null) return null
+  if (days < 0) return 'overdue'
+  for (const th of CAP_THRESHOLDS) if (days <= th) return String(th)
+  return null
 }
 
 main().catch((err) => {

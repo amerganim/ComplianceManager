@@ -100,6 +100,18 @@ const STRINGS = {
   binder_complete: { en: 'Complete — every item has a current document.', bn: 'সম্পূর্ণ — প্রতিটি আইটেমে বর্তমান ডকুমেন্ট আছে।' },
   binder_index:    { en: 'Index of documents', bn: 'ডকুমেন্ট সূচি' },
   prepared_on:     { en: 'Prepared', bn: 'প্রস্তুত' },
+
+  // Settings + alert channel (Phase 8)
+  settings:        { en: 'Settings', bn: 'সেটিংস' },
+  alert_channel:   { en: 'Alert channel', bn: 'অ্যালার্ট চ্যানেল' },
+  alert_channel_help: { en: 'How reminders are delivered to the owner and assigned managers.', bn: 'মালিক ও দায়িত্বপ্রাপ্তদের কাছে রিমাইন্ডার কীভাবে পৌঁছাবে।' },
+  channel_email:   { en: 'Email', bn: 'ইমেইল' },
+  channel_whatsapp:{ en: 'WhatsApp', bn: 'হোয়াটসঅ্যাপ' },
+  channel_both:    { en: 'Both', bn: 'উভয়' },
+  my_phone:        { en: 'My WhatsApp number', bn: 'আমার হোয়াটসঅ্যাপ নম্বর' },
+  my_phone_help:   { en: 'Include country code, e.g. 8801XXXXXXXXX.', bn: 'দেশের কোড সহ, যেমন 8801XXXXXXXXX।' },
+  saved:           { en: 'Saved', bn: 'সংরক্ষিত হয়েছে' },
+  whatsapp_note:   { en: 'WhatsApp delivery needs a Meta Business account to be connected. Until then, WhatsApp alerts are logged only.', bn: 'হোয়াটসঅ্যাপ পাঠাতে একটি Meta Business অ্যাকাউন্ট সংযুক্ত করতে হবে। ততক্ষণ পর্যন্ত শুধু লগ হবে।' },
 }
 
 const LangContext = createContext(null)

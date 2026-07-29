@@ -21,6 +21,7 @@ Built for small-to-mid Bangladesh garment factories. Compliance manager uses it 
 | 5 | Recurring-task "mark done" + reset | `src/lib/useItems.js` (`markDone`) |
 | 6 | CAP tracker: import auditor Excel → track findings → export status report | `src/lib/cap.js`, `src/pages/Caps.jsx`, `src/pages/CapDetail.jsx` |
 | 7 | Document repo (versioned, Storage-backed) + one-click print-ready audit binder | `src/lib/documents.js`, `src/pages/AuditBinder.jsx`, `supabase/05_documents.sql` |
+| 8 | WhatsApp alert channel + per-factory channel choice (email/WhatsApp/both) | `scripts/lib/alerts.mjs`, `scripts/lib/targets.mjs`, `src/pages/Settings.jsx`, `supabase/06_whatsapp.sql` |
 
 Two guiding rules are load-bearing in the code:
 - **Status is computed, never stored** — single source of truth in `src/lib/status.js`, reused by the list, dashboard, and reminder job.
@@ -34,6 +35,7 @@ Two guiding rules are load-bearing in the code:
    - `supabase/02_rls.sql`
    - `supabase/04_cap.sql` (CAP tracker tables + RLS)
    - `supabase/05_documents.sql` (document repo + private Storage bucket + RLS)
+   - `supabase/06_whatsapp.sql` (per-factory alert channel + factory update policy)
 3. **Env:** copy `.env.example` to `.env` and fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (from Supabase → Project Settings → API).
 4. Install and run:
 
@@ -59,7 +61,9 @@ Runs daily, emails the assigned manager + factory owner as each item crosses 90/
 SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run remind
 ```
 
-**Production:** add repo secrets `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `ALERT_FROM_EMAIL`; the `.github/workflows/daily-reminders.yml` workflow runs at 03:00 UTC (~09:00 BD) and is also runnable on demand.
+**Production:** add repo secrets `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `ALERT_FROM_EMAIL` (and, for WhatsApp, `WHATSAPP_TOKEN` + `WHATSAPP_PHONE_ID`); the `.github/workflows/daily-reminders.yml` workflow runs at 03:00 UTC (~09:00 BD) and is also runnable on demand.
+
+**Channels (Phase 8):** each factory picks email / WhatsApp / both in Settings. The engine routes every alert through one `sendAlert(channel, recipient, message)` — email via Resend, WhatsApp via the Meta Cloud API — resolving recipients per channel (emails vs. E.164 phones) with recipient-level dedup. Without provider keys, each channel dry-runs to the console, so the whole pipeline is testable before any provider is connected.
 
 ## Next (let the first paying customer fund it)
 

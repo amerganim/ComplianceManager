@@ -41,6 +41,7 @@ export default function Layout({ children }) {
             <NavLink to="/items" className={link}>{t('items')}</NavLink>
             <NavLink to="/caps" className={link}>{t('caps')}</NavLink>
             <NavLink to="/binder" className={link}>{t('binder')}</NavLink>
+            <NavLink to="/settings" className={link}>{t('settings')}</NavLink>
           </nav>
         </div>
       </header>
