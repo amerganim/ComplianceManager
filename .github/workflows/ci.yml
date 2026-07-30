@@ -1,0 +1,22 @@
+name: CI
+
+# Build the app on every push / PR to main. No secrets needed — the Vite
+# build runs without Supabase env (the app degrades to a "Setup needed"
+# screen at runtime, which doesn't affect the build).
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
