@@ -1,6 +1,7 @@
 node_modules
 dist
 dist-ssr
+sample-cap.xlsx
 *.local
 .env
 .env.*
