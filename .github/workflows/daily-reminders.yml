@@ -16,7 +16,9 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: npm run remind
+        # Skip cleanly (green) until Supabase secrets are configured, so
+        # the scheduled run doesn't show red before go-live.
+      - name: Send reminders
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -26,3 +28,9 @@ jobs:
           WHATSAPP_PHONE_ID: ${{ secrets.WHATSAPP_PHONE_ID }}
           WHATSAPP_TEMPLATE: ${{ secrets.WHATSAPP_TEMPLATE }}
           WHATSAPP_TEMPLATE_LANG: ${{ secrets.WHATSAPP_TEMPLATE_LANG }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "Supabase secrets not set — skipping reminder run."
+            exit 0
+          fi
+          npm run remind
